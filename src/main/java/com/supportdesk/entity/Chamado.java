@@ -3,9 +3,7 @@ package com.supportdesk.entity;
 import com.supportdesk.entity.enums.CategoriaChamado;
 import com.supportdesk.entity.enums.PrioridadeChamado;
 import com.supportdesk.entity.enums.StatusChamado;
-
 import jakarta.persistence.*;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -57,4 +55,7 @@ public class Chamado {
     @JoinColumn(name = "tecnico_id")
     private Tecnico tecnico;
 
+    @ManyToOne
+    @JoinColumn(name = "empresa_id", nullable = false)
+    private Empresa empresa;
 }

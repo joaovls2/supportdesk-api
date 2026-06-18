@@ -27,4 +27,7 @@ public class Tecnico {
     @Column(nullable = false)
     private String senha;
 
+    @ManyToOne
+    @JoinColumn(name = "empresa_id", nullable = false)
+    private Empresa empresa;
 }

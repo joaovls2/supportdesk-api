@@ -16,16 +16,35 @@ public class DashboardService {
         this.chamadoRepository = chamadoRepository;
     }
 
-    public DashboardResponseDTO obterDashboard() {
+    public DashboardResponseDTO obterDashboard(
+            Long empresaId) {
 
         return new DashboardResponseDTO(
-                chamadoRepository.count(),
-                chamadoRepository.countByStatus(StatusChamado.ABERTO),
-                chamadoRepository.countByStatus(StatusChamado.EM_ANDAMENTO),
-                chamadoRepository.countByStatus(StatusChamado.RESOLVIDO),
-                chamadoRepository.countByStatus(StatusChamado.FECHADO),
-                chamadoRepository.countByStatus(StatusChamado.REABERTO),
-                chamadoRepository.countByStatus(StatusChamado.CANCELADO)
+                chamadoRepository.countByEmpresaId(empresaId),
+                chamadoRepository.countByEmpresaIdAndStatus(
+                        empresaId,
+                        StatusChamado.ABERTO
+                ),
+                chamadoRepository.countByEmpresaIdAndStatus(
+                        empresaId,
+                        StatusChamado.EM_ANDAMENTO
+                ),
+                chamadoRepository.countByEmpresaIdAndStatus(
+                        empresaId,
+                        StatusChamado.RESOLVIDO
+                ),
+                chamadoRepository.countByEmpresaIdAndStatus(
+                        empresaId,
+                        StatusChamado.FECHADO
+                ),
+                chamadoRepository.countByEmpresaIdAndStatus(
+                        empresaId,
+                        StatusChamado.REABERTO
+                ),
+                chamadoRepository.countByEmpresaIdAndStatus(
+                        empresaId,
+                        StatusChamado.CANCELADO
+                )
         );
     }
 }

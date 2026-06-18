@@ -9,10 +9,8 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class UsuarioResponseDTO {
+public class CriarEmpresaDTO {
 
-    private Long id;
     private String nome;
-    private String email;
-    private Long empresaId;
+    private String cnpj;
 }

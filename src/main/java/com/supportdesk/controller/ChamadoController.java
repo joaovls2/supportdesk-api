@@ -4,6 +4,7 @@ import com.supportdesk.dto.AtualizarStatusChamadoDTO;
 import com.supportdesk.dto.AtribuirTecnicoDTO;
 import com.supportdesk.dto.ChamadoResponseDTO;
 import com.supportdesk.dto.CriarChamadoDTO;
+import com.supportdesk.security.JwtService;
 import com.supportdesk.service.ChamadoService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,9 +17,11 @@ import java.util.List;
 public class ChamadoController {
 
     private final ChamadoService chamadoService;
+    private final JwtService jwtService;
 
-    public ChamadoController(ChamadoService chamadoService) {
+    public ChamadoController(ChamadoService chamadoService, JwtService jwtService) {
         this.chamadoService = chamadoService;
+        this.jwtService = jwtService;
     }
 
     @PostMapping
@@ -34,20 +37,33 @@ public class ChamadoController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ChamadoResponseDTO>> listarTodos() {
+    public ResponseEntity<List<ChamadoResponseDTO>> listarTodos(
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        Long empresaId = extrairEmpresaId(authorizationHeader);
 
         return ResponseEntity.ok(
-                chamadoService.listarTodos()
+                chamadoService.listarTodos(empresaId)
         );
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ChamadoResponseDTO> buscarPorId(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        Long empresaId = extrairEmpresaId(authorizationHeader);
 
         return ResponseEntity.ok(
-                chamadoService.buscarPorId(id)
+                chamadoService.buscarPorId(id, empresaId)
         );
+    }
+
+    private Long extrairEmpresaId(
+            String authorizationHeader) {
+
+        String token = authorizationHeader.replace("Bearer ", "");
+        return jwtService.extrairEmpresaId(token);
     }
 
     @PutMapping("/{id}/atribuir-tecnico")

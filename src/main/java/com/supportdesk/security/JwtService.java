@@ -26,11 +26,13 @@ public class JwtService {
 
     public String gerarToken(
             String email,
-            String tipo) {
+            String tipo,
+            Long empresaId) {
 
         return Jwts.builder()
                 .subject(email)
                 .claim("tipo", tipo)
+                .claim("empresaId", empresaId)
                 .issuedAt(new Date())
                 .expiration(
                         new Date(System.currentTimeMillis() + EXPIRATION_TIME)
@@ -54,6 +56,10 @@ public class JwtService {
 
     public String extrairTipo(String token) {
         return extrairClaims(token).get("tipo", String.class);
+    }
+
+    public Long extrairEmpresaId(String token) {
+        return extrairClaims(token).get("empresaId", Long.class);
     }
 
     public boolean tokenValido(String token) {

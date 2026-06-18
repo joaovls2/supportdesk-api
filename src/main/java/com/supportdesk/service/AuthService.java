@@ -1,12 +1,12 @@
 package com.supportdesk.service;
 
-import com.supportdesk.entity.Administrador;
-import com.supportdesk.repository.AdministradorRepository;
 import com.supportdesk.dto.LoginRequestDTO;
 import com.supportdesk.dto.LoginResponseDTO;
+import com.supportdesk.entity.Administrador;
 import com.supportdesk.entity.Tecnico;
 import com.supportdesk.entity.Usuario;
 import com.supportdesk.exception.BusinessException;
+import com.supportdesk.repository.AdministradorRepository;
 import com.supportdesk.repository.TecnicoRepository;
 import com.supportdesk.repository.UsuarioRepository;
 import com.supportdesk.security.JwtService;
@@ -18,21 +18,22 @@ public class AuthService {
 
     private final UsuarioRepository usuarioRepository;
     private final TecnicoRepository tecnicoRepository;
+    private final AdministradorRepository administradorRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final AdministradorRepository administradorRepository;
 
     public AuthService(
             UsuarioRepository usuarioRepository,
             TecnicoRepository tecnicoRepository,
+            AdministradorRepository administradorRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService, AdministradorRepository administradorRepository) {
+            JwtService jwtService) {
 
         this.usuarioRepository = usuarioRepository;
         this.tecnicoRepository = tecnicoRepository;
+        this.administradorRepository = administradorRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
-        this.administradorRepository = administradorRepository;
     }
 
     public LoginResponseDTO loginUsuario(LoginRequestDTO dto) {
@@ -46,9 +47,12 @@ public class AuthService {
             throw new BusinessException("E-mail ou senha inválidos");
         }
 
+        Long empresaId = usuario.getEmpresa().getId();
+
         String token = jwtService.gerarToken(
                 usuario.getEmail(),
-                "USUARIO"
+                "USUARIO",
+                empresaId
         );
 
         return new LoginResponseDTO(
@@ -56,6 +60,7 @@ public class AuthService {
                 usuario.getNome(),
                 usuario.getEmail(),
                 "USUARIO",
+                empresaId,
                 token
         );
     }
@@ -71,9 +76,12 @@ public class AuthService {
             throw new BusinessException("E-mail ou senha inválidos");
         }
 
+        Long empresaId = tecnico.getEmpresa().getId();
+
         String token = jwtService.gerarToken(
                 tecnico.getEmail(),
-                "TECNICO"
+                "TECNICO",
+                empresaId
         );
 
         return new LoginResponseDTO(
@@ -81,33 +89,28 @@ public class AuthService {
                 tecnico.getNome(),
                 tecnico.getEmail(),
                 "TECNICO",
+                empresaId,
                 token
         );
     }
 
-    public LoginResponseDTO loginAdministrador(
-            LoginRequestDTO dto) {
+    public LoginResponseDTO loginAdministrador(LoginRequestDTO dto) {
 
-        Administrador administrador =
-                administradorRepository
-                        .findByEmail(dto.getEmail())
-                        .orElseThrow(() ->
-                                new BusinessException(
-                                        "E-mail ou senha inválidos"
-                                ));
+        Administrador administrador = administradorRepository
+                .findByEmail(dto.getEmail())
+                .orElseThrow(() ->
+                        new BusinessException("E-mail ou senha inválidos"));
 
-        if (!passwordEncoder.matches(
-                dto.getSenha(),
-                administrador.getSenha())) {
-
-            throw new BusinessException(
-                    "E-mail ou senha inválidos"
-            );
+        if (!passwordEncoder.matches(dto.getSenha(), administrador.getSenha())) {
+            throw new BusinessException("E-mail ou senha inválidos");
         }
+
+        Long empresaId = administrador.getEmpresa().getId();
 
         String token = jwtService.gerarToken(
                 administrador.getEmail(),
-                "ADMIN"
+                "ADMIN",
+                empresaId
         );
 
         return new LoginResponseDTO(
@@ -115,6 +118,7 @@ public class AuthService {
                 administrador.getNome(),
                 administrador.getEmail(),
                 "ADMIN",
+                empresaId,
                 token
         );
     }

@@ -2,11 +2,11 @@ package com.supportdesk.service;
 
 import com.supportdesk.dto.AtualizarStatusChamadoDTO;
 import com.supportdesk.dto.AtribuirTecnicoDTO;
-import com.supportdesk.entity.Tecnico;
 import com.supportdesk.dto.ChamadoResponseDTO;
 import com.supportdesk.dto.CriarChamadoDTO;
 import com.supportdesk.entity.Chamado;
 import com.supportdesk.entity.HistoricoChamado;
+import com.supportdesk.entity.Tecnico;
 import com.supportdesk.entity.Usuario;
 import com.supportdesk.entity.enums.StatusChamado;
 import com.supportdesk.exception.BusinessException;
@@ -60,6 +60,7 @@ public class ChamadoService {
         );
         chamado.setUsuario(usuario);
         chamado.setTecnico(null);
+        chamado.setEmpresa(usuario.getEmpresa());
 
         Chamado chamadoSalvo = chamadoRepository.save(chamado);
 
@@ -75,9 +76,38 @@ public class ChamadoService {
         return converterParaResponseDTO(chamadoSalvo);
     }
 
-    public List<ChamadoResponseDTO> listarTodos() {
+    public List<ChamadoResponseDTO> listarTodos(
+            Long empresaId) {
 
-        return chamadoRepository.findAll()
+        return chamadoRepository.findByEmpresaId(empresaId)
+                .stream()
+                .map(this::converterParaResponseDTO)
+                .toList();
+    }
+
+    public List<ChamadoResponseDTO> listarPorUsuario(
+            Long usuarioId,
+            Long empresaId) {
+
+        if (!usuarioRepository.existsById(usuarioId)) {
+            throw new ResourceNotFoundException("Usuário não encontrado");
+        }
+
+        return chamadoRepository.findByUsuarioIdAndEmpresaId(usuarioId, empresaId)
+                .stream()
+                .map(this::converterParaResponseDTO)
+                .toList();
+    }
+
+    public List<ChamadoResponseDTO> listarPorTecnico(
+            Long tecnicoId,
+            Long empresaId) {
+
+        if (!tecnicoRepository.existsById(tecnicoId)) {
+            throw new ResourceNotFoundException("Técnico não encontrado");
+        }
+
+        return chamadoRepository.findByTecnicoIdAndEmpresaId(tecnicoId, empresaId)
                 .stream()
                 .map(this::converterParaResponseDTO)
                 .toList();
@@ -95,6 +125,12 @@ public class ChamadoService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Técnico não encontrado"));
 
+        if (!chamado.getEmpresa().getId().equals(tecnico.getEmpresa().getId())) {
+            throw new BusinessException(
+                    "Técnico não pertence à mesma empresa do chamado."
+            );
+        }
+
         chamado.setTecnico(tecnico);
 
         Chamado chamadoAtualizado = chamadoRepository.save(chamado);
@@ -111,11 +147,16 @@ public class ChamadoService {
         return converterParaResponseDTO(chamadoAtualizado);
     }
 
-    public ChamadoResponseDTO buscarPorId(Long id) {
+    public ChamadoResponseDTO buscarPorId(
+            Long id,
+            Long empresaId) {
 
-        Chamado chamado = chamadoRepository.findById(id)
+        Chamado chamado = chamadoRepository
+                .findByIdAndEmpresaId(id, empresaId)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Chamado não encontrado"));
+                        new ResourceNotFoundException(
+                                "Chamado não encontrado"
+                        ));
 
         return converterParaResponseDTO(chamado);
     }
@@ -132,10 +173,17 @@ public class ChamadoService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Técnico não encontrado"));
 
+        if (!chamado.getEmpresa().getId().equals(tecnico.getEmpresa().getId())) {
+            throw new BusinessException(
+                    "Técnico não pertence à mesma empresa do chamado."
+            );
+        }
+
         validarTransicaoStatus(
                 chamado.getStatus(),
                 dto.getStatus()
         );
+
         chamado.setStatus(dto.getStatus());
 
         Chamado chamadoAtualizado =
@@ -167,6 +215,7 @@ public class ChamadoService {
                 chamado.getStatus(),
                 StatusChamado.CANCELADO
         );
+
         chamado.setStatus(StatusChamado.CANCELADO);
 
         Chamado chamadoAtualizado =
@@ -198,6 +247,7 @@ public class ChamadoService {
                 chamado.getStatus(),
                 StatusChamado.REABERTO
         );
+
         chamado.setStatus(StatusChamado.REABERTO);
 
         Chamado chamadoAtualizado =
@@ -208,6 +258,38 @@ public class ChamadoService {
 
         historico.setStatus(StatusChamado.REABERTO);
         historico.setComentario("Chamado reaberto.");
+        historico.setDataAlteracao(LocalDateTime.now());
+        historico.setChamado(chamadoAtualizado);
+        historico.setTecnico(chamadoAtualizado.getTecnico());
+
+        historicoChamadoRepository.save(historico);
+
+        return converterParaResponseDTO(
+                chamadoAtualizado
+        );
+    }
+
+    public ChamadoResponseDTO fecharChamado(Long chamadoId) {
+
+        Chamado chamado = chamadoRepository.findById(chamadoId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Chamado não encontrado"));
+
+        validarTransicaoStatus(
+                chamado.getStatus(),
+                StatusChamado.FECHADO
+        );
+
+        chamado.setStatus(StatusChamado.FECHADO);
+
+        Chamado chamadoAtualizado =
+                chamadoRepository.save(chamado);
+
+        HistoricoChamado historico =
+                new HistoricoChamado();
+
+        historico.setStatus(StatusChamado.FECHADO);
+        historico.setComentario("Chamado fechado.");
         historico.setDataAlteracao(LocalDateTime.now());
         historico.setChamado(chamadoAtualizado);
         historico.setTecnico(chamadoAtualizado.getTecnico());
@@ -251,66 +333,6 @@ public class ChamadoService {
         }
     }
 
-    public List<ChamadoResponseDTO> listarPorUsuario(Long usuarioId) {
-
-        if (!usuarioRepository.existsById(usuarioId)) {
-            throw new ResourceNotFoundException(
-                    "Usuário não encontrado"
-            );
-        }
-
-        return chamadoRepository.findByUsuarioId(usuarioId)
-                .stream()
-                .map(this::converterParaResponseDTO)
-                .toList();
-    }
-
-    public List<ChamadoResponseDTO> listarPorTecnico(Long tecnicoId) {
-
-        if (!tecnicoRepository.existsById(tecnicoId)) {
-            throw new ResourceNotFoundException(
-                    "Técnico não encontrado"
-            );
-        }
-
-        return chamadoRepository.findByTecnicoId(tecnicoId)
-                .stream()
-                .map(this::converterParaResponseDTO)
-                .toList();
-    }
-
-    public ChamadoResponseDTO fecharChamado(Long chamadoId) {
-
-        Chamado chamado = chamadoRepository.findById(chamadoId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Chamado não encontrado"));
-
-        validarTransicaoStatus(
-                chamado.getStatus(),
-                StatusChamado.FECHADO
-        );
-
-        chamado.setStatus(StatusChamado.FECHADO);
-
-        Chamado chamadoAtualizado =
-                chamadoRepository.save(chamado);
-
-        HistoricoChamado historico =
-                new HistoricoChamado();
-
-        historico.setStatus(StatusChamado.FECHADO);
-        historico.setComentario("Chamado fechado.");
-        historico.setDataAlteracao(LocalDateTime.now());
-        historico.setChamado(chamadoAtualizado);
-        historico.setTecnico(chamadoAtualizado.getTecnico());
-
-        historicoChamadoRepository.save(historico);
-
-        return converterParaResponseDTO(
-                chamadoAtualizado
-        );
-    }
-
     private ChamadoResponseDTO converterParaResponseDTO(Chamado chamado) {
 
         Long tecnicoId = null;
@@ -329,7 +351,8 @@ public class ChamadoService {
                 chamado.getDataCriacao(),
                 chamado.getDataLimiteSla(),
                 chamado.getUsuario().getId(),
-                tecnicoId
+                tecnicoId,
+                chamado.getEmpresa().getId()
         );
     }
 }

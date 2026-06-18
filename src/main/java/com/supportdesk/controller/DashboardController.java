@@ -1,27 +1,36 @@
 package com.supportdesk.controller;
 
 import com.supportdesk.dto.DashboardResponseDTO;
+import com.supportdesk.security.JwtService;
 import com.supportdesk.service.DashboardService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequestMapping("/dashboard")
 public class DashboardController {
 
     private final DashboardService dashboardService;
+    private final JwtService jwtService;
 
     public DashboardController(
-            DashboardService dashboardService) {
+            DashboardService dashboardService,
+            JwtService jwtService) {
 
         this.dashboardService = dashboardService;
+        this.jwtService = jwtService;
     }
 
-    @GetMapping("/dashboard")
-    public ResponseEntity<DashboardResponseDTO> obterDashboard() {
+    @GetMapping
+    public ResponseEntity<DashboardResponseDTO> obterDashboard(
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        String token = authorizationHeader.replace("Bearer ", "");
+
+        Long empresaId = jwtService.extrairEmpresaId(token);
 
         return ResponseEntity.ok(
-                dashboardService.obterDashboard()
+                dashboardService.obterDashboard(empresaId)
         );
     }
 }

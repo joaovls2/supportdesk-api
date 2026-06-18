@@ -14,5 +14,4 @@ public class CriarTecnicoDTO {
     private String nome;
     private String email;
     private String senha;
-
 }

@@ -3,6 +3,7 @@ package com.supportdesk.controller;
 import com.supportdesk.dto.AdministradorResponseDTO;
 import com.supportdesk.dto.AtualizarAdministradorDTO;
 import com.supportdesk.dto.CriarAdministradorDTO;
+import com.supportdesk.security.JwtService;
 import com.supportdesk.service.AdministradorService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,19 +16,30 @@ import java.util.List;
 public class AdministradorController {
 
     private final AdministradorService administradorService;
+    private final JwtService jwtService;
 
     public AdministradorController(
-            AdministradorService administradorService) {
+            AdministradorService administradorService,
+            JwtService jwtService) {
 
         this.administradorService = administradorService;
+        this.jwtService = jwtService;
+    }
+
+    private Long extrairEmpresaId(String authorizationHeader) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        return jwtService.extrairEmpresaId(token);
     }
 
     @PostMapping
     public ResponseEntity<AdministradorResponseDTO> salvar(
-            @RequestBody CriarAdministradorDTO dto) {
+            @RequestBody CriarAdministradorDTO dto,
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        Long empresaId = extrairEmpresaId(authorizationHeader);
 
         AdministradorResponseDTO administrador =
-                administradorService.salvar(dto);
+                administradorService.salvar(dto, empresaId);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -35,37 +47,49 @@ public class AdministradorController {
     }
 
     @GetMapping
-    public ResponseEntity<List<AdministradorResponseDTO>> listarTodos() {
+    public ResponseEntity<List<AdministradorResponseDTO>> listarTodos(
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        Long empresaId = extrairEmpresaId(authorizationHeader);
 
         return ResponseEntity.ok(
-                administradorService.listarTodos()
+                administradorService.listarTodos(empresaId)
         );
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<AdministradorResponseDTO> buscarPorId(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        Long empresaId = extrairEmpresaId(authorizationHeader);
 
         return ResponseEntity.ok(
-                administradorService.buscarPorId(id)
+                administradorService.buscarPorId(id, empresaId)
         );
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<AdministradorResponseDTO> atualizar(
             @PathVariable Long id,
-            @RequestBody AtualizarAdministradorDTO dto) {
+            @RequestBody AtualizarAdministradorDTO dto,
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        Long empresaId = extrairEmpresaId(authorizationHeader);
 
         return ResponseEntity.ok(
-                administradorService.atualizar(id, dto)
+                administradorService.atualizar(id, dto, empresaId)
         );
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String authorizationHeader) {
 
-        administradorService.deletar(id);
+        Long empresaId = extrairEmpresaId(authorizationHeader);
+
+        administradorService.deletar(id, empresaId);
 
         return ResponseEntity.noContent().build();
     }

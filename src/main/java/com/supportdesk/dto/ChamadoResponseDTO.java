@@ -29,4 +29,5 @@ public class ChamadoResponseDTO {
 
     private Long usuarioId;
     private Long tecnicoId;
+    private Long empresaId;
 }

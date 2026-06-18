@@ -9,16 +9,20 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     public SecurityConfig(
-            JwtAuthenticationFilter jwtAuthenticationFilter) {
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            CorsConfigurationSource corsConfigurationSource) {
 
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.corsConfigurationSource = corsConfigurationSource;
     }
 
     @Bean
@@ -31,6 +35,9 @@ public class SecurityConfig {
             HttpSecurity http) throws Exception {
 
         http
+                .cors(cors ->
+                        cors.configurationSource(corsConfigurationSource)
+                )
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
@@ -39,13 +46,27 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
 
-                        .requestMatchers("/auth/**")
+                        // Públicas
+                        .requestMatchers(
+                                "/auth/**",
+                                "/empresas/cadastrar"
+                        )
                         .permitAll()
 
-                        .requestMatchers("/administradores/**")
+                        // Dashboard
+                        .requestMatchers("/dashboard/**")
                         .hasRole("ADMIN")
 
-                        .requestMatchers("/dashboard/**")
+                        // Chamados próprios do usuário
+                        .requestMatchers("/usuarios/*/chamados")
+                        .hasAnyRole("ADMIN", "USUARIO")
+
+                        // Chamados atribuídos ao técnico
+                        .requestMatchers("/tecnicos/*/chamados")
+                        .hasAnyRole("ADMIN", "TECNICO")
+
+                        // Administração
+                        .requestMatchers("/administradores/**")
                         .hasRole("ADMIN")
 
                         .requestMatchers("/tecnicos/**")
@@ -57,8 +78,13 @@ public class SecurityConfig {
                         .requestMatchers("/usuarios/**")
                         .hasAnyRole("ADMIN", "USUARIO")
 
+                        // Chamados
                         .requestMatchers("/chamados/**")
                         .hasAnyRole("ADMIN", "TECNICO", "USUARIO")
+
+                        // Empresas
+                        .requestMatchers("/empresas/**")
+                        .hasRole("ADMIN")
 
                         .anyRequest()
                         .authenticated()
