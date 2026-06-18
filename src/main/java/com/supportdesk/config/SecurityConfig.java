@@ -1,5 +1,6 @@
 package com.supportdesk.config;
 
+import org.springframework.http.HttpMethod;
 import com.supportdesk.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,6 +48,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         // Públicas
+
+                        .requestMatchers(HttpMethod.OPTIONS, "/**")
+                        .permitAll()
+
                         .requestMatchers(
                                 "/auth/**",
                                 "/empresas/cadastrar"
