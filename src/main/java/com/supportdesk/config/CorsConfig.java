@@ -15,9 +15,10 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of(
+        configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
-                "https://supportdesk-frontend-eight.vercel.app"
+                "https://supportdesk-frontend-eight.vercel.app",
+                "https://*.vercel.app"
         ));
 
         configuration.setAllowedMethods(List.of(
@@ -29,7 +30,7 @@ public class CorsConfig {
         ));
 
         configuration.setAllowedHeaders(List.of("*"));
-
+        configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
