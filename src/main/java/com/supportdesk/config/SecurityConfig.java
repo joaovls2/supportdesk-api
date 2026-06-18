@@ -18,7 +18,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
-@EnableWebSecurity // 1. Garante que o Spring aplique a segurança web corretamente
+@EnableWebSecurity
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -35,24 +35,16 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 2. Aponta para o Bean de configuração de CORS isolado ali embaixo
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // Libera as requisições de teste (Preflight OPTIONS)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                        // Rotas públicas do sistema
                         .requestMatchers("/auth/**", "/empresas/cadastrar").permitAll()
-
-                        // 3. O SEGREDO: Libera a rota de erro global do Spring.
-                        // Se der 404 ou 500, o CORS não vai quebrar e mostrará o erro real no front!
                         .requestMatchers("/error").permitAll()
 
-                        // Rotas restritas por permissão (Hierarquia do mais específico para o mais geral)
                         .requestMatchers("/dashboard/**").hasRole("ADMIN")
                         .requestMatchers("/administradores/**").hasRole("ADMIN")
                         .requestMatchers("/tecnicos/**").hasRole("ADMIN")
@@ -63,7 +55,6 @@ public class SecurityConfig {
                         .requestMatchers("/usuarios/**").hasAnyRole("ADMIN", "USUARIO")
                         .requestMatchers("/chamados/**").hasAnyRole("ADMIN", "TECNICO", "USUARIO")
 
-                        // Configuração correta: regras específicas de empresa ANTES da regra geral de admin
                         .requestMatchers("/empresas/**").hasRole("ADMIN")
 
                         .anyRequest().authenticated()
@@ -73,10 +64,9 @@ public class SecurityConfig {
                         UsernamePasswordAuthenticationFilter.class
                 );
 
-        return http.build();
+        return http.build(); // <-- Corrigido aqui!
     }
 
-    // 4. Configuração do CORS isolada e limpa
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
