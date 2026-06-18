@@ -8,7 +8,6 @@ target/
 !**/src/test/**/target/
 
 # Spring Boot / Configurações locais
-src/main/resources/application.properties
 application-local.properties
 application-dev.properties
 
