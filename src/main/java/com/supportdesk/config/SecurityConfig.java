@@ -102,6 +102,8 @@ public class SecurityConfig {
                         .requestMatchers("/empresas/**")
                         .hasRole("ADMIN")
 
+                        .requestMatchers("/ia/**").permitAll()
+
                         .anyRequest()
                         .authenticated()
                 )
